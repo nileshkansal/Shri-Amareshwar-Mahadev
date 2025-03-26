@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
@@ -11,30 +12,10 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
-    final customerController = Get.put(CustomerController(Get.find<ApiService>()));
+    final customerController = Get.find<CustomerController>();
 
-    final services = [
-      {
-        'name': '108 Anushthan Yojana',
-        'icon': Icons.temple_hindu,
-      },
-      {
-        'name': 'Annapurna Yojana',
-        'icon': Icons.food_bank,
-      },
-      {
-        'name': 'Goshala Yojana',
-        'icon': Icons.pets,
-      },
-      {
-        'name': 'Srawan Maas Yojana',
-        'icon': Icons.calendar_month,
-      },
-      {
-        'name': 'Ram Charitra Manas Yatra Yojana',
-        'icon': Icons.directions_walk,
-      },
-    ];
+    // Refresh user data when screen is loaded
+    authController.getUserProfile();
 
     return Scaffold(
       appBar: AppBar(
@@ -42,7 +23,9 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () => Get.toNamed(Routes.profile),
+            onPressed: () {
+              Get.toNamed(Routes.profile);
+            },
           ),
         ],
       ),
@@ -60,58 +43,59 @@ class HomeScreen extends StatelessWidget {
                     ),
                   )),
               const SizedBox(height: 20),
-              Obx(() {
-                final user = authController.user.value;
-                return Card(
+              GestureDetector(
+                onTap: () {
+                  Get.toNamed(Routes.profile);
+                },
+                child: Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: InkWell(
-                    onTap: () => Get.toNamed(Routes.profile),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(15.0),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundImage: user?.profileImage != null
-                                ? NetworkImage(user!.profileImage!)
-                                : null,
-                            child: user?.profileImage == null
-                                ? const Icon(Icons.person, size: 30)
-                                : null,
+                  child: Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(25),
                           ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'View Profile',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  'Tap to manage your profile settings',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
+                          child: Icon(
+                            Icons.person_outline,
+                            color: Theme.of(context).primaryColor,
                           ),
-                          const Icon(Icons.arrow_forward_ios),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'View Profile',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                'Tap to manage your profile settings',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios),
+                      ],
                     ),
                   ),
-                );
-              }),
+                ),
+              ),
               const SizedBox(height: 30),
               const Text(
                 'Our Services',
@@ -121,55 +105,79 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 1.1,
-                ),
-                itemCount: services.length,
-                itemBuilder: (context, index) {
-                  final service = services[index];
-                  return Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        customerController.preSelectService(service['name'] as String);
-                        Get.toNamed(Routes.addCustomer);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(15.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              service['icon'] as IconData,
-                              size: 40,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              service['name'] as String,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+              Obx(() {
+                final categories = authController.user.value?.categories ?? [];
+                
+                if (categories.isEmpty) {
+                  return const Center(
+                    child: Text('No services available'),
+                  );
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 1.1,
+                  ),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          customerController.preSelectService(category.name);
+                          Get.toNamed(Routes.addCustomer);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(15.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (category.image.isNotEmpty)
+                                Image.network(
+                                  category.image,
+                                  height: 40,
+                                  width: 40,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.category,
+                                      size: 40,
+                                      color: Theme.of(context).primaryColor,
+                                    );
+                                  },
+                                )
+                              else
+                                Icon(
+                                  Icons.category,
+                                  size: 40,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              const SizedBox(height: 10),
+                              Text(
+                                category.name,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                );
+              }),
               const SizedBox(height: 30),
               ElevatedButton.icon(
                 onPressed: () => Get.toNamed(Routes.customerList),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../services/api_service.dart';
 import '../../controllers/customer_controller.dart';
 
 class CustomerDetailsScreen extends StatelessWidget {
@@ -8,7 +9,7 @@ class CustomerDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<CustomerController>();
+    final controller = Get.isRegistered<CustomerController>() ? Get.find<CustomerController>() : Get.put(CustomerController(Get.find<ApiService>()), permanent: true);
 
     return Scaffold(
       appBar: AppBar(

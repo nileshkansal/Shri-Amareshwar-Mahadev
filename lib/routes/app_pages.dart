@@ -5,13 +5,18 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/customer/add_customer_screen.dart';
 import '../screens/customer/customer_list_screen.dart';
 import '../screens/customer/customer_details_screen.dart';
+import '../screens/splash/splash_screen.dart';
 
 part 'app_routes.dart';
 
 class AppPages {
-  static const initial = Routes.login;
+  static const initial = Routes.splash;
 
   static final routes = [
+    GetPage(
+      name: Routes.splash,
+      page: () => const SplashScreen(),
+    ),
     GetPage(
       name: Routes.login,
       page: () => const LoginScreen(),

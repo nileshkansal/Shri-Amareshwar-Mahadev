@@ -7,10 +7,10 @@ class ChangePasswordDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.isRegistered<AuthController>() ? Get.find<AuthController>() : Get.put(AuthController(), permanent: true);
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
-    final authController = Get.find<AuthController>();
 
     return Dialog(
       shape: RoundedRectangleBorder(

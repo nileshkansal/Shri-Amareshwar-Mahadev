@@ -4,13 +4,14 @@ import 'package:intl/intl.dart';
 import '../../controllers/customer_controller.dart';
 import '../../models/customer_model.dart';
 import '../../services/api_service.dart';
+import '../../controllers/auth_controller.dart';
 
 class AddCustomerScreen extends StatelessWidget {
   const AddCustomerScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(CustomerController(Get.find<ApiService>()));
+    final controller = Get.isRegistered<CustomerController>() ? Get.find<CustomerController>() : Get.put(CustomerController(Get.find<ApiService>()), permanent: true);
 
     return Scaffold(
       appBar: AppBar(
@@ -177,18 +178,12 @@ class AddCustomerScreen extends StatelessWidget {
                   labelText: 'Service',
                   border: OutlineInputBorder(),
                 ),
-                items: [
-                  '108 Anushthan Yojana',
-                  'Annapurna Yojana',
-                  'Goshala Yojana',
-                  'Srawan Maas Yojana',
-                  'Ram Charitra Manas Yatra Yojana',
-                ].map((String value) {
+                items: Get.find<AuthController>().user.value?.categories.map((category) {
                   return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
+                    value: category.name,
+                    child: Text(category.name),
                   );
-                }).toList(),
+                }).toList() ?? [],
                 onChanged: (String? newValue) {
                   if (newValue != null) {
                     controller.selectedService.value = newValue;

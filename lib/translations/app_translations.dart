@@ -1,0 +1,51 @@
+import 'package:get/get.dart';
+
+class AppTranslations extends Translations {
+  @override
+  Map<String, Map<String, String>> get keys => {
+        'en_US': {
+          'welcome_back': 'Welcome',
+          'email': 'Email',
+          'password': 'Password',
+          'login': 'Login',
+          'change_language': 'Change Language',
+          'english': 'English',
+          'hindi': 'Hindi',
+          'location_services_disabled': 'Location Services Disabled',
+          'enable_location_services': 'Please enable location services to continue.',
+          'open_settings': 'Open Settings',
+          'cancel': 'Cancel',
+          'permission_denied': 'Permission Denied',
+          'location_permission_required': 'Location permission is required for this app.',
+          'location_permission': 'Location Permission',
+          'location_permission_denied': 'Location permission is permanently denied. Please enable it from app settings.',
+          'error': 'Error',
+          'fill_all_fields': 'Please fill in all fields',
+          'success': 'Success',
+          'profile': 'Profile',
+          'logout': 'Logout',
+        },
+        'hi_IN': {
+          'welcome_back': 'स्वागत है',
+          'email': 'ईमेल',
+          'password': 'पासवर्ड',
+          'login': 'लॉग इन करें',
+          'change_language': 'भाषा बदलें',
+          'english': 'अंग्रेज़ी',
+          'hindi': 'हिंदी',
+          'location_services_disabled': 'स्थान सेवाएं अक्षम हैं',
+          'enable_location_services': 'कृपया जारी रखने के लिए स्थान सेवाएं सक्षम करें।',
+          'open_settings': 'सेटिंग्स खोलें',
+          'cancel': 'रद्द करें',
+          'permission_denied': 'अनुमति अस्वीकृत',
+          'location_permission_required': 'इस ऐप के लिए स्थान की अनुमति आवश्यक है।',
+          'location_permission': 'स्थान अनुमति',
+          'location_permission_denied': 'स्थान अनुमति स्थायी रूप से अस्वीकृत है। कृपया इसे ऐप सेटिंग्स से सक्षम करें।',
+          'error': 'त्रुटि',
+          'fill_all_fields': 'कृपया सभी फ़ील्ड भरें',
+          'success': 'सफलता',
+          'profile': 'प्रोफ़ाइल',
+          'logout': 'लॉग आउट',
+        },
+      };
+} 

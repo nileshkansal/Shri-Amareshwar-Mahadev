@@ -1,61 +1,60 @@
 import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:geolocator/geolocator.dart';
-import '../models/user_model.dart';
+
 import '../models/customer_model.dart';
+import '../models/user_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'YOUR_API_BASE_URL';
-  final String _token;
+  late final Dio _dio;
+  static const String serverUrl = "https://shri-amareshwar-mahadev.brilliancetechsolutions.com/";
+  final String baseUrl = "${serverUrl}api"; // Replace with your actual base URL
 
-  ApiService(this._token);
-
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_token',
-      };
-
-  Future<UserModel> login(String email, String password) async {
-    // Get device info
-    final deviceInfo = await DeviceInfoPlugin().deviceInfo;
-    final deviceData = {
-      'model': deviceInfo.data['model'],
-      'os': deviceInfo.data['systemName'],
-      'brand': deviceInfo.data['brand'],
-    };
-
-    // Get location
-    final position = await Geolocator.getCurrentPosition();
-    final location = {
-      'latitude': position.latitude,
-      'longitude': position.longitude,
-    };
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'device_info': deviceData,
-        'location': location,
-        'fcm_token': 'YOUR_FCM_TOKEN', // Implement FCM token retrieval
-      }),
+  ApiService() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        headers: {
+          'Accept': 'application/json',
+        },
+      ),
     );
+  }
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return UserModel.fromJson(data['user']);
-    } else {
-      throw Exception('Failed to login');
+  Future<UserModel> login(FormData formData) async {
+    try {
+      final response = await _dio.post('/login', data: formData);
+
+      if (response.statusCode == 200 && response.data['status'] == true) {
+        final responseData = response.data['data'];
+        // Combine token and user data for the UserModel
+        final userData = {
+          ...responseData['user'],
+          'token': responseData['token'],
+        };
+        return UserModel.fromJson({'user': userData});
+      } else {
+        throw response.data['message'] ?? 'Login failed';
+      }
+    } catch (e) {
+      if (e is DioException) {
+        final response = e.response?.data;
+        throw response?['message'] ?? 'Login failed';
+      }
+      throw 'Login failed: $e';
     }
   }
 
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(String currentPassword, String newPassword, {String? token}) async {
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
     final response = await http.post(
       Uri.parse('$baseUrl/change-password'),
-      headers: _headers,
+      headers: headers,
       body: jsonEncode({
         'current_password': currentPassword,
         'new_password': newPassword,
@@ -67,26 +66,34 @@ class ApiService {
     }
   }
 
-  Future<List<CustomerModel>> getCustomers() async {
+  Future<List<CustomerModel>> getCustomers({String? token}) async {
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
     final response = await http.get(
       Uri.parse('$baseUrl/customers'),
-      headers: _headers,
+      headers: headers,
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return (data['customers'] as List)
-          .map((customer) => CustomerModel.fromJson(customer))
-          .toList();
+      return (data['customers'] as List).map((customer) => CustomerModel.fromJson(customer)).toList();
     } else {
       throw Exception('Failed to get customers');
     }
   }
 
-  Future<CustomerModel> addCustomer(CustomerModel customer) async {
+  Future<CustomerModel> addCustomer(CustomerModel customer, {String? token}) async {
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
     final response = await http.post(
       Uri.parse('$baseUrl/customers'),
-      headers: _headers,
+      headers: headers,
       body: jsonEncode(customer.toJson()),
     );
 
@@ -98,10 +105,15 @@ class ApiService {
     }
   }
 
-  Future<CustomerModel> getCustomerDetails(String customerId) async {
+  Future<CustomerModel> getCustomerDetails(String customerId, {String? token}) async {
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
     final response = await http.get(
       Uri.parse('$baseUrl/customers/$customerId'),
-      headers: _headers,
+      headers: headers,
     );
 
     if (response.statusCode == 200) {
@@ -112,10 +124,15 @@ class ApiService {
     }
   }
 
-  Future<UserModel> updateProfile(UserModel user) async {
+  Future<UserModel> updateProfile(UserModel user, {String? token}) async {
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
     final response = await http.put(
       Uri.parse('$baseUrl/profile'),
-      headers: _headers,
+      headers: headers,
       body: jsonEncode(user.toJson()),
     );
 
@@ -126,4 +143,4 @@ class ApiService {
       throw Exception('Failed to update profile');
     }
   }
-} 
+}
