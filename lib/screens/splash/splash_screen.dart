@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../controllers/auth_controller.dart';
-import '../../routes/app_pages.dart';
+import 'package:provider/provider.dart';
+import 'package:shri_amareshwar_mahadev/controllers/auth_provider.dart';
+import 'package:shri_amareshwar_mahadev/screens/home/home_screen.dart';
+import 'package:shri_amareshwar_mahadev/screens/login/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,22 +12,32 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    _checkAuth(context);
   }
 
-  Future<void> _checkAuth() async {
-    final authController = Get.find<AuthController>();
-    await Future.delayed(const Duration(seconds: 2)); // Show splash for 2 seconds
-    
-    if (authController.isLoggedIn.value) {
-      await authController.getUserProfile(); // Refresh user data
-      Get.offAllNamed(Routes.home);
-    } else {
-      Get.offAllNamed(Routes.login);
-    }
+  Future<void> _checkAuth(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.initialize();
+
+    await Future.delayed(const Duration(seconds: 2), () {
+
+      debugPrint("User response =========> ${authProvider.user?.toJson()}");
+
+      if (authProvider.user != null && authProvider.user?.data?.token != null && context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) {
+          return HomeScreen();
+        },), (route) => false,);
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) {
+          return LoginScreen();
+        },), (route) => false,);
+      }
+
+    });
   }
 
   @override
@@ -48,4 +59,4 @@ class _SplashScreenState extends State<SplashScreen> {
       ),
     );
   }
-} 
+}

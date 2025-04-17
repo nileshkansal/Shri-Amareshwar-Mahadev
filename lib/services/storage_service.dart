@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
@@ -18,8 +19,8 @@ class StorageService {
   // Save user data
   Future<void> saveUserData(UserModel user) async {
     await _prefs.setString(_userKey, jsonEncode(user.toJson()));
-    if (user.token != null) {
-      await _prefs.setString(_tokenKey, user.token!);
+    if (user.data?.token != null) {
+      await _prefs.setString(_tokenKey, user.data!.token!);
     }
   }
 
@@ -30,7 +31,7 @@ class StorageService {
       try {
         return UserModel.fromJson(jsonDecode(userStr));
       } catch (e) {
-        print('Error parsing user data: $e');
+        debugPrint('Error parsing user data: $e');
         return null;
       }
     }

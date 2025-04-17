@@ -1,132 +1,104 @@
+import 'package:shri_amareshwar_mahadev/controllers/customer_provider.dart';
+
 class Child {
   final String name;
   final DateTime dateOfBirth;
 
-  Child({
-    required this.name,
-    required this.dateOfBirth,
-  });
+  Child({required this.name, required this.dateOfBirth});
 
   factory Child.fromJson(Map<String, dynamic> json) {
-    return Child(
-      name: json['name'],
-      dateOfBirth: DateTime.parse(json['date_of_birth']),
-    );
+    return Child(name: json['name'], dateOfBirth: DateTime.parse(json['date_of_birth']));
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'date_of_birth': dateOfBirth.toIso8601String(),
-    };
+    return {'name': name, 'date_of_birth': dateOfBirth.toIso8601String().split('T')[0].replaceAll('-', '/')};
   }
 }
 
 class Ancestor {
   final String name;
-  final DateTime deathAnniversary;
+  final DateTime dateOfBirth;
 
-  Ancestor({
-    required this.name,
-    required this.deathAnniversary,
-  });
+  Ancestor({required this.name, required this.dateOfBirth});
 
   factory Ancestor.fromJson(Map<String, dynamic> json) {
-    return Ancestor(
-      name: json['name'],
-      deathAnniversary: DateTime.parse(json['death_anniversary']),
-    );
+    return Ancestor(name: json['name'], dateOfBirth: DateTime.parse(json['date_of_birth']));
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'death_anniversary': deathAnniversary.toIso8601String(),
-    };
+    return {'name': name, 'date_of_birth': dateOfBirth.toIso8601String().split('T')[0].replaceAll('-', '/')};
   }
 }
 
-enum ServiceDuration {
-  monthly,
-  quarterly,
-  halfYearly,
-  yearly,
-}
-
 class CustomerModel {
-  final String id;
+  final String? id;
   final String firstName;
   final String lastName;
   final String spouseName;
   final String gotra;
   final DateTime dateOfBirth;
   final DateTime? dateOfAnniversary;
+  final DateTime? dateOfDeath;
+  final String phoneNumber;
   final List<Child> children;
   final List<Ancestor> ancestors;
-  final ServiceDuration serviceDuration;
-  final DateTime serviceDurationStartDate;
-  final DateTime serviceDurationEndDate;
-  final String selectedService;
+  final String serviceDuration;
+  final DateTime serviceEndDate;
+  final int categoryId;
 
   CustomerModel({
-    required this.id,
+    this.id,
     required this.firstName,
     required this.lastName,
     required this.spouseName,
     required this.gotra,
     required this.dateOfBirth,
     this.dateOfAnniversary,
+    this.dateOfDeath,
+    required this.phoneNumber,
     required this.children,
     required this.ancestors,
     required this.serviceDuration,
-    required this.serviceDurationStartDate,
-    required this.serviceDurationEndDate,
-    required this.selectedService,
+    required this.serviceEndDate,
+    required this.categoryId,
   });
 
   factory CustomerModel.fromJson(Map<String, dynamic> json) {
     return CustomerModel(
       id: json['id'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
+      firstName: json['f_name'],
+      lastName: json['l_name'],
       spouseName: json['spouse_name'],
       gotra: json['gotra'],
       dateOfBirth: DateTime.parse(json['date_of_birth']),
-      dateOfAnniversary: json['date_of_anniversary'] != null
-          ? DateTime.parse(json['date_of_anniversary'])
-          : null,
-      children: (json['children'] as List)
-          .map((child) => Child.fromJson(child))
-          .toList(),
-      ancestors: (json['ancestors'] as List)
-          .map((ancestor) => Ancestor.fromJson(ancestor))
-          .toList(),
-      serviceDuration: ServiceDuration.values.firstWhere(
-          (e) => e.toString() == 'ServiceDuration.${json['service_duration']}'),
-      serviceDurationStartDate:
-          DateTime.parse(json['service_duration_start_date']),
-      serviceDurationEndDate: DateTime.parse(json['service_duration_end_date']),
-      selectedService: json['selected_service'],
+      dateOfAnniversary: json['date_of_anniversary'] != null ? DateTime.parse(json['date_of_anniversary']) : null,
+      dateOfDeath: json['date_of_death'] != null ? DateTime.parse(json['date_of_death']) : null,
+      phoneNumber: json['number'] ?? '',
+      children: (json['children_detail'] as List).map((child) => Child.fromJson(child)).toList(),
+      ancestors: (json['ancestors_detail'] as List).map((ancestor) => Ancestor.fromJson(ancestor)).toList(),
+      serviceDuration: json['service_duration'],
+      serviceEndDate: DateTime.parse(json['service_end']),
+      categoryId: json['category'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'first_name': firstName,
-      'last_name': lastName,
+      'category': categoryId,
+      'f_name': firstName,
+      'l_name': lastName,
       'spouse_name': spouseName,
       'gotra': gotra,
-      'date_of_birth': dateOfBirth.toIso8601String(),
-      'date_of_anniversary': dateOfAnniversary?.toIso8601String(),
-      'children': children.map((child) => child.toJson()).toList(),
-      'ancestors': ancestors.map((ancestor) => ancestor.toJson()).toList(),
+      'date_of_birth': dateOfBirth.toIso8601String().split('T')[0].replaceAll('-', '/'),
+      'date_of_anniversary': dateOfAnniversary?.toIso8601String().split('T')[0].replaceAll('-', '/'),
+      'date_of_death': dateOfDeath?.toIso8601String().split('T')[0].replaceAll('-', '/'),
+      'number': phoneNumber,
+      'children_detail': children.map((child) => child.toJson()).toList(),
+      'ancestors_detail': ancestors.map((ancestor) => ancestor.toJson()).toList(),
       'service_duration': serviceDuration.toString().split('.').last,
-      'service_duration_start_date': serviceDurationStartDate.toIso8601String(),
-      'service_duration_end_date': serviceDurationEndDate.toIso8601String(),
-      'selected_service': selectedService,
+      'service_end': serviceEndDate.toIso8601String().split('T')[0].replaceAll('-', '/'),
     };
   }
 
   String get fullName => '$firstName $lastName';
-} 
+}

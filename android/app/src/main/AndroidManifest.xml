@@ -16,6 +16,8 @@
     <application
         android:label="shri_amareshwar_mahadev"
         android:name="${applicationName}"
+        android:hardwareAccelerated="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

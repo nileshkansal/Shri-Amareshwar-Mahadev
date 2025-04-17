@@ -1,98 +1,209 @@
-import 'category_model.dart';
+// To parse this JSON data, do
+//
+//     final userModel = userModelFromJson(jsonString);
+
+import 'dart:convert';
+
+UserModel userModelFromJson(String str) => UserModel.fromJson(json.decode(str));
+
+String userModelToJson(UserModel data) => json.encode(data.toJson());
 
 class UserModel {
-  final int id;
-  final String name;
-  final String email;
-  final String phone;
-  final String? image;
-  final String categoryId;
-  final int status;
-  final int editStatus;
-  final int viewStatus;
-  final String? emailVerifiedAt;
-  final String latitude;
-  final String longitude;
-  final String fcmToken;
-  final String deviceInfo;
-  final String createdAt;
-  final String updatedAt;
-  final List<CategoryModel> categories;
-  final String? token;
+  bool? status;
+  int? code;
+  String? message;
+  Data? data;
 
   UserModel({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phone,
-    this.image,
-    required this.categoryId,
-    required this.status,
-    required this.editStatus,
-    required this.viewStatus,
-    this.emailVerifiedAt,
-    required this.latitude,
-    required this.longitude,
-    required this.fcmToken,
-    required this.deviceInfo,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.categories,
-    this.token,
+    this.status,
+    this.code,
+    this.message,
+    this.data,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    var categoriesList = <CategoryModel>[];
-    if (json['user']?['categories'] != null) {
-      categoriesList = (json['user']['categories'] as List)
-          .map((category) => CategoryModel.fromJson(category))
-          .toList();
-    }
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
+    status: json["status"],
+    code: json["code"],
+    message: json["message"],
+    data: json["data"] == null ? null : Data.fromJson(json["data"]),
+  );
 
-    final userData = json['user'] ?? json;
-    
-    return UserModel(
-      id: userData['id'] ?? 0,
-      name: userData['name'] ?? '',
-      email: userData['email'] ?? '',
-      phone: userData['phone'] ?? '',
-      image: userData['image'],
-      categoryId: userData['category_id']?.toString() ?? '',
-      status: userData['status'] ?? 0,
-      editStatus: userData['edit_status'] ?? 0,
-      viewStatus: userData['view_status'] ?? 0,
-      emailVerifiedAt: userData['email_verified_at'],
-      latitude: userData['latitude'] ?? '',
-      longitude: userData['longitude'] ?? '',
-      fcmToken: userData['fcm_token'] ?? '',
-      deviceInfo: userData['device_info'] ?? '',
-      createdAt: userData['created_at'] ?? '',
-      updatedAt: userData['updated_at'] ?? '',
-      categories: categoriesList,
-      token: json['token'],
-    );
-  }
+  Map<String, dynamic> toJson() => {
+    "status": status,
+    "code": code,
+    "message": message,
+    "data": data?.toJson(),
+  };
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'image': image,
-      'category_id': categoryId,
-      'status': status,
-      'edit_status': editStatus,
-      'view_status': viewStatus,
-      'email_verified_at': emailVerifiedAt,
-      'latitude': latitude,
-      'longitude': longitude,
-      'fcm_token': fcmToken,
-      'device_info': deviceInfo,
-      'created_at': createdAt,
-      'updated_at': updatedAt,
-      'categories': categories.map((category) => category.toJson()).toList(),
-      'token': token,
-    };
-  }
-} 
+class Data {
+  String? token;
+  User? user;
+
+  Data({
+    this.token,
+    this.user,
+  });
+
+  factory Data.fromJson(Map<String, dynamic> json) => Data(
+    token: json["token"],
+    user: json["user"] == null ? null : User.fromJson(json["user"]),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "token": token,
+    "user": user?.toJson(),
+  };
+}
+
+class User {
+  int? id;
+  String? name;
+  String? email;
+  String? phone;
+  dynamic image;
+  String? categoryId;
+  int? status;
+  int? editStatus;
+  int? viewStatus;
+  dynamic emailVerifiedAt;
+  String? latitude;
+  String? longitude;
+  String? fcmToken;
+  DeviceInfo? deviceInfo;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+  List<Category>? categories;
+
+  User({
+    this.id,
+    this.name,
+    this.email,
+    this.phone,
+    this.image,
+    this.categoryId,
+    this.status,
+    this.editStatus,
+    this.viewStatus,
+    this.emailVerifiedAt,
+    this.latitude,
+    this.longitude,
+    this.fcmToken,
+    this.deviceInfo,
+    this.createdAt,
+    this.updatedAt,
+    this.categories,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) => User(
+    id: json["id"],
+    name: json["name"],
+    email: json["email"],
+    phone: json["phone"],
+    image: json["image"],
+    categoryId: json["category_id"],
+    status: json["status"],
+    editStatus: json["edit_status"],
+    viewStatus: json["view_status"],
+    emailVerifiedAt: json["email_verified_at"],
+    latitude: json["latitude"],
+    longitude: json["longitude"],
+    fcmToken: json["fcm_token"],
+    deviceInfo: json["device_info"] == null ? null : DeviceInfo.fromJson(json["device_info"]),
+    createdAt: json["created_at"] == null ? null : DateTime.parse(json["created_at"]),
+    updatedAt: json["updated_at"] == null ? null : DateTime.parse(json["updated_at"]),
+    categories: json["categories"] == null ? [] : List<Category>.from(json["categories"]!.map((x) => Category.fromJson(x))),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "email": email,
+    "phone": phone,
+    "image": image,
+    "category_id": categoryId,
+    "status": status,
+    "edit_status": editStatus,
+    "view_status": viewStatus,
+    "email_verified_at": emailVerifiedAt,
+    "latitude": latitude,
+    "longitude": longitude,
+    "fcm_token": fcmToken,
+    "device_info": deviceInfo?.toJson(),
+    "created_at": createdAt?.toIso8601String(),
+    "updated_at": updatedAt?.toIso8601String(),
+    "categories": categories == null ? [] : List<dynamic>.from(categories!.map((x) => x.toJson())),
+  };
+}
+
+class Category {
+  int? id;
+  String? name;
+  String? image;
+  String? alt;
+  int? status;
+  int? priority;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
+  Category({
+    this.id,
+    this.name,
+    this.image,
+    this.alt,
+    this.status,
+    this.priority,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory Category.fromJson(Map<String, dynamic> json) => Category(
+    id: json["id"],
+    name: json["name"],
+    image: json["image"],
+    alt: json["alt"],
+    status: json["status"],
+    priority: json["priority"],
+    createdAt: json["created_at"] == null ? null : DateTime.parse(json["created_at"]),
+    updatedAt: json["updated_at"] == null ? null : DateTime.parse(json["updated_at"]),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "image": image,
+    "alt": alt,
+    "status": status,
+    "priority": priority,
+    "created_at": createdAt?.toIso8601String(),
+    "updated_at": updatedAt?.toIso8601String(),
+  };
+}
+
+class DeviceInfo {
+  String? model;
+  String? brand;
+  String? osType;
+  String? osVersion;
+
+  DeviceInfo({
+    this.model,
+    this.brand,
+    this.osType,
+    this.osVersion,
+  });
+
+  factory DeviceInfo.fromJson(Map<String, dynamic> json) => DeviceInfo(
+    model: json["model"],
+    brand: json["brand"],
+    osType: json["os_type"],
+    osVersion: json["os_version"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "model": model,
+    "brand": brand,
+    "os_type": osType,
+    "os_version": osVersion,
+  };
+}
