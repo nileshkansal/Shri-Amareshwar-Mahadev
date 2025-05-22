@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shri_amareshwar_mahadev/main.dart';
+import 'package:shri_amareshwar_mahadev/models/customer_list_response.dart';
 import 'package:shri_amareshwar_mahadev/models/customer_response.dart';
 
 import '../models/customer_model.dart';
@@ -92,8 +94,8 @@ class ApiService {
     }
   }
 
-  Future<List<CustomerModel>> getCustomers({String? token}) async {
-    final url = '$baseUrl/customers';
+  Future<List<CustomerList>?> getCustomers(var body, {String? token}) async {
+    final url = '$baseUrl/registration/list';
     Map<String, String> headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -102,9 +104,11 @@ class ApiService {
     debugPrint('Get Customers API Call:');
     debugPrint('URL: $url');
     debugPrint('Headers: $headers');
+    debugPrint('Body: $body');
 
-    final response = await http.get(
+    final response = await http.post(
       Uri.parse(url),
+      body: body,
       headers: headers,
     );
 
@@ -113,13 +117,15 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return (data['customers'] as List).map((customer) => CustomerModel.fromJson(customer)).toList();
+      debugPrint('data =======> $data');
+      CustomerListResponse customerListResponse = CustomerListResponse.fromJson(data);
+      return customerListResponse.data;
     } else {
       throw Exception('Failed to get customers');
     }
   }
 
-  Future<AddCustomerResponse> addCustomer(CustomerModel customer, {String? token}) async {
+  Future<AddCustomerResponse> addCustomer(CustomerModel customer, {String? token, File? imageFile}) async {
     final url = '$baseUrl/add/registration';
     Map<String, String> headers = {
       'Content-Type': 'application/json',
@@ -131,17 +137,35 @@ class ApiService {
     debugPrint('Headers: $headers');
     debugPrint('Request Body: $body');
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: headers,
-      body: body,
-    );
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..headers.addAll({
+        'Authorization': 'Bearer $token',
+      });
+    // Add fields from customer.toJson()
+    final customerJson = customer.toJson();
+    customerJson.forEach((key, value) {
+      if (value != null) {
+        request.fields[key] = value.toString();
+      }
+    });
+    // Add image file
+    if (imageFile != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'image', // this should match your API key for image
+        imageFile.path,
+      ));
+    }
+    // Send request
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
     debugPrint('Response Body: ${response.body}');
+
     final data = jsonDecode(response.body);
     if (data["status"] == true) {
       return AddCustomerResponse.fromJson(data);
     } else {
-      throw Exception('Failed to add customer');
+      throw Exception(data["message"] ?? 'Failed to add customer');
     }
   }
 
@@ -228,4 +252,30 @@ class ApiService {
       throw Exception('Failed to update profile');
     }
   }
+
+  Future<void> updateFCM({String? token}) async {
+    final url = '$baseUrl/update/fcm';
+    Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+    final body = jsonEncode({
+      "fcm_token": fcmToken
+    });
+
+    debugPrint('Update Profile API Call:');
+    debugPrint('URL: $url');
+    debugPrint('Headers: $headers');
+    debugPrint('Request Body: $body');
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: headers,
+      body: body,
+    );
+
+    debugPrint('Response Status Code: ${response.statusCode}');
+    debugPrint('Response Body: ${response.body}');
+  }
+
 }

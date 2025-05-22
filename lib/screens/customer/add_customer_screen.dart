@@ -34,6 +34,54 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 15),
+                  Text('Photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  // GestureDetector(
+                  //   onTap: () => value.pickImage(),
+                  //   child: Container(
+                  //     height: 150,
+                  //     width: double.infinity,
+                  //     decoration: BoxDecoration(
+                  //       border: Border.all(color: Colors.grey),
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //     child: value.selectedImageFile != null
+                  //         ? ClipRRect(
+                  //       borderRadius: BorderRadius.circular(8),
+                  //       child: Image.file(value.selectedImageFile!, fit: BoxFit.cover),
+                  //     ) : const Center(child: Text('Tap to select image')),
+                  //   ),
+                  // ),
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundImage: value.selectedImageFile != null
+                              ? FileImage(value.selectedImageFile!)
+                              : const AssetImage('assets/images/placeholder.png') as ImageProvider,
+                          backgroundColor: Colors.grey[200],
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () => value.pickImage(),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 15),
                   TextFormField(
                     controller: value.firstNameController,
                     decoration: const InputDecoration(labelText: 'First Name', border: OutlineInputBorder()),
@@ -181,6 +229,19 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
                       if (date != null) {
                         value.setServiceEndDate(date);
                       }
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: value.addressController,
+                    decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()),
+                    minLines: 4,
+                    maxLines: 4,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter last name';
+                      }
+                      return null;
                     },
                   ),
                   const SizedBox(height: 30),

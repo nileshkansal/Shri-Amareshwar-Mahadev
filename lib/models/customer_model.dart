@@ -36,6 +36,7 @@ class CustomerModel {
   final String lastName;
   final String spouseName;
   final String gotra;
+  final String address;
   final DateTime dateOfBirth;
   final DateTime? dateOfAnniversary;
   final DateTime? dateOfDeath;
@@ -52,6 +53,7 @@ class CustomerModel {
     required this.lastName,
     required this.spouseName,
     required this.gotra,
+    required this.address,
     required this.dateOfBirth,
     this.dateOfAnniversary,
     this.dateOfDeath,
@@ -70,6 +72,7 @@ class CustomerModel {
       lastName: json['l_name'],
       spouseName: json['spouse_name'],
       gotra: json['gotra'],
+      address: json['address'],
       dateOfBirth: DateTime.parse(json['date_of_birth']),
       dateOfAnniversary: json['date_of_anniversary'] != null ? DateTime.parse(json['date_of_anniversary']) : null,
       dateOfDeath: json['date_of_death'] != null ? DateTime.parse(json['date_of_death']) : null,
@@ -89,6 +92,7 @@ class CustomerModel {
       'l_name': lastName,
       'spouse_name': spouseName,
       'gotra': gotra,
+      'address': address,
       'date_of_birth': dateOfBirth.toIso8601String().split('T')[0].replaceAll('-', '/'),
       'date_of_anniversary': dateOfAnniversary?.toIso8601String().split('T')[0].replaceAll('-', '/'),
       'date_of_death': dateOfDeath?.toIso8601String().split('T')[0].replaceAll('-', '/'),

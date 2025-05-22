@@ -10,6 +10,9 @@ import 'package:shri_amareshwar_mahadev/services/api_service.dart';
 
 import 'translations/app_translations.dart';
 
+String fcmToken = "sadkafjai";
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

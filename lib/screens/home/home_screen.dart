@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:shri_amareshwar_mahadev/controllers/auth_provider.dart';
 import 'package:shri_amareshwar_mahadev/screens/customer/add_customer_screen.dart';
+import 'package:shri_amareshwar_mahadev/screens/customer/customer_list_screen.dart';
 import 'package:shri_amareshwar_mahadev/screens/profile/profile_screen.dart';
 import 'package:shri_amareshwar_mahadev/services/api_service.dart';
 
@@ -15,7 +16,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     authProvider = Provider.of<AuthProvider>(context);
-
+    authProvider.updateFCM();
 
     return Scaffold(
       appBar: AppBar(
@@ -26,6 +27,14 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (context) {
                 return ProfileScreen();
+              },));
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.list),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                return CustomerListScreen();
               },));
             },
           ),

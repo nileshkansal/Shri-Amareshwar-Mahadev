@@ -1,7 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shri_amareshwar_mahadev/controllers/auth_provider.dart';
+import 'package:shri_amareshwar_mahadev/models/customer_list_response.dart';
 import 'package:shri_amareshwar_mahadev/models/customer_response.dart';
+
 import '../models/customer_model.dart';
 import '../services/api_service.dart';
 
@@ -13,18 +20,13 @@ class CustomerProvider with ChangeNotifier {
   final phoneController = TextEditingController();
   final spouseNameController = TextEditingController();
   final gotraController = TextEditingController();
+  final addressController = TextEditingController();
 
   DateTime? dateOfBirth;
   DateTime? dateOfAnniversary;
   DateTime? dateOfDeath;
   DateTime? serviceEndDate;
-  final Map<String, String> serviceDurationMap = {
-    'monthly': 'Monthly',
-    'quarterly': 'Quarterly',
-    'half_yearly': 'Half Yearly',
-    'yearly': 'Yearly',
-  };
-
+  final Map<String, String> serviceDurationMap = {'monthly': 'Monthly', 'quarterly': 'Quarterly', 'half_yearly': 'Half Yearly', 'yearly': 'Yearly'};
 
   String serviceDuration = "monthly";
   int selectedCategoryId = 0;
@@ -38,8 +40,23 @@ class CustomerProvider with ChangeNotifier {
 
   List<CustomerModel> customers = [];
   CustomerModel? selectedCustomer;
+  List<CustomerList>? customerList = [];
+
+  File? selectedImageFile;
+
 
   CustomerProvider({required this.apiService});
+
+  Future<void> pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      selectedImageFile = File(pickedFile.path);
+      notifyListeners();
+    }
+  }
+
 
   void preSelectCategory(int categoryId) {
     selectedCategoryId = categoryId;
@@ -92,15 +109,18 @@ class CustomerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchCustomers() async {
+  Future<void> fetchCustomers(BuildContext context, {required int page, required String token}) async {
     try {
       isLoading = true;
       notifyListeners();
 
-      customers = await apiService.getCustomers();
+      var body = jsonEncode({"page": page, "ItemCount": 10});
+
+      customerList = await apiService.getCustomers(body, token: token);
+      notifyListeners();
     } catch (e) {
       debugPrint('Failed to fetch customers: $e');
-      // handle error with your snackbar/Toast mechanism
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch customers: $e')));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -108,16 +128,8 @@ class CustomerProvider with ChangeNotifier {
   }
 
   bool validateForm(BuildContext context) {
-    if (firstNameController.text.isEmpty ||
-        lastNameController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        spouseNameController.text.isEmpty ||
-        gotraController.text.isEmpty ||
-        serviceDuration.isEmpty
-    ) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all the required fields')),
-      );
+    if (firstNameController.text.isEmpty || lastNameController.text.isEmpty || phoneController.text.isEmpty || spouseNameController.text.isEmpty || gotraController.text.isEmpty || serviceDuration.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all the required fields')));
       return false;
     }
     return true;
@@ -144,43 +156,43 @@ class CustomerProvider with ChangeNotifier {
         spouseName: spouseNameController.text.trim(),
         gotra: gotraController.text.trim(),
         serviceEndDate: serviceEndDate!,
+        address: addressController.text.toString()
       );
 
       debugPrint("customer ==========> ${customer.toJson()}");
       AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
-      AddCustomerResponse response = await apiService.addCustomer(customer, token: authProvider.user?.data?.token);
+      String token = authProvider.user?.data?.token ?? '';
 
-      if(response.status != null && response.status!) {
+
+      AddCustomerResponse response = await apiService.addCustomer(
+        customer,
+        token: token,
+        imageFile: selectedImageFile,
+      );
+
+      if (response.status != null && response.status!) {
         clearFields();
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Customer added successfully')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Customer added successfully')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message!)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.message!)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchCustomerDetails(BuildContext context, String customerId) async {
+  Future<void> fetchCustomerDetails(BuildContext context, String customerId, {String? token}) async {
     try {
       isLoading = true;
       notifyListeners();
 
-      selectedCustomer = await apiService.getCustomerDetails(customerId);
+      selectedCustomer = await apiService.getCustomerDetails(customerId, token: token);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch customer details: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to fetch customer details: $e')));
     } finally {
       isLoading = false;
       notifyListeners();
@@ -195,30 +207,31 @@ class CustomerProvider with ChangeNotifier {
     gotraController.dispose();
   }
 
- void clearFields() {
-   firstNameController.clear();
-   lastNameController.clear();
-   phoneController.clear();
-   spouseNameController.clear();
-   gotraController.clear();
+  void clearFields() {
+    firstNameController.clear();
+    lastNameController.clear();
+    phoneController.clear();
+    spouseNameController.clear();
+    gotraController.clear();
+    addressController.clear();
+    selectedImageFile = null;
 
-   dateOfBirth = null;
-   dateOfAnniversary = null;
-   dateOfDeath = null;
-   serviceEndDate = null;
+    dateOfBirth = null;
+    dateOfAnniversary = null;
+    dateOfDeath = null;
+    serviceEndDate = null;
 
-   serviceDuration = "monthly";
-   selectedCategoryId = 0;
+    serviceDuration = "monthly";
+    selectedCategoryId = 0;
 
-   isLoading = false;
+    isLoading = false;
 
-   children = [];
-   ancestors = [];
+    children = [];
+    ancestors = [];
 
-   customers = [];
-   selectedCustomer = null;
-
-   notifyListeners();
- }
-
+    customers = [];
+    selectedCustomer = null;
+    customerList = [];
+    notifyListeners();
+  }
 }

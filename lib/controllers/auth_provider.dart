@@ -44,10 +44,56 @@ class AuthProvider with ChangeNotifier {
     await checkAuthStatus();
   }
 
-  Future<bool> checkLocationPermission() async {
+  // Future<bool> checkLocationPermission() async {
+  //   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //   if (!serviceEnabled) {
+  //     return false;
+  //   }
+  //
+  //   LocationPermission permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     permission = await Geolocator.requestPermission();
+  //     if (permission == LocationPermission.denied) {
+  //       return false;
+  //     }
+  //   }
+  //
+  //   if (permission == LocationPermission.deniedForever) {
+  //     return false;
+  //   }
+  //   return true;
+  // }
+
+  Future<bool> checkLocationPermission(BuildContext context) async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return false;
+      bool openSettings = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Location Services Disabled'),
+          content: const Text('Please enable location services to proceed.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+
+      if (openSettings == true) {
+        await Geolocator.openLocationSettings();
+        serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          return false;
+        }
+      } else {
+        return false;
+      }
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
@@ -59,10 +105,33 @@ class AuthProvider with ChangeNotifier {
     }
 
     if (permission == LocationPermission.deniedForever) {
+      bool openAppSettings = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Permission Permanently Denied'),
+          content: const Text('Please enable location permission from app settings.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+
+      if (openAppSettings == true) {
+        await Geolocator.openAppSettings();
+      }
       return false;
     }
+
     return true;
   }
+
 
   Future<Map<String, String>> _getDeviceInfo() async {
     try {
@@ -85,13 +154,18 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(BuildContext context) async {
+    debugPrint("login clicked");
+    debugPrint("email =========> ${emailController.text}");
+    debugPrint("password =========> ${passwordController.text}");
+
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       return;
     }
     _isLoading = true;
     notifyListeners();
 
-    bool hasLocationPermission = await checkLocationPermission();
+    bool hasLocationPermission = await checkLocationPermission(context);
+    debugPrint("permission check ==========> $hasLocationPermission");
     if (!hasLocationPermission) {
       _isLoading = false;
       notifyListeners();
@@ -104,7 +178,7 @@ class AuthProvider with ChangeNotifier {
     try {
       UserModel loggedInUser = await _apiService.login(emailController.text, passwordController.text, deviceInfo, position);
 
-      if(loggedInUser != null && loggedInUser.data?.token != null) {
+      if (loggedInUser != null && loggedInUser.data?.token != null) {
         debugPrint("loggedInUser ===========> ${loggedInUser.toJson()}");
         await _storageService!.saveUserData(loggedInUser);
         _user = loggedInUser;
@@ -144,7 +218,7 @@ class AuthProvider with ChangeNotifier {
           return LoginScreen();
         },
       ),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -175,6 +249,16 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateFCM() async {
+    try {
+      await _apiService.updateFCM(token: user?.data?.token);
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+
+
   @override
   void dispose() {
     emailController.dispose();
@@ -182,11 +266,11 @@ class AuthProvider with ChangeNotifier {
     super.dispose();
   }
 
-  void clearFields(){
-    if(emailController != null) {
+  void clearFields() {
+    if (emailController != null) {
       emailController.clear();
     }
-    if(passwordController != null) {
+    if (passwordController != null) {
       passwordController.clear();
     }
   }
