@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shri_amareshwar_mahadev/controllers/customer_provider.dart';
@@ -67,7 +68,7 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
                           bottom: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: () => value.pickImage(),
+                            onTap: () => _showImageSourceDialog(context, value),
                             child: Container(
                               decoration: const BoxDecoration(
                                 color: Colors.blue,
@@ -99,32 +100,6 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter last name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 15),
-                  TextFormField(
-                    controller: value.phoneController,
-                    decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter phone number';
-                      }
-                      if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-                        return 'Please enter a valid 10-digit phone number';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 15),
-                  TextFormField(
-                    controller: value.spouseNameController,
-                    decoration: const InputDecoration(labelText: 'Spouse Name', border: OutlineInputBorder()),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter spouse name';
                       }
                       return null;
                     },
@@ -176,6 +151,32 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
                       }
                     },
                   ),
+                  const SizedBox(height: 20),
+                  const Text('Number', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: value.phoneNumber.length,
+                    itemBuilder: (context, index) {
+                      final child = value.phoneNumber[index];
+                      return ListTile(title: Text(child.belongsTo), subtitle: Text("${child.mobileType} ${child.number}"), trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => value.removeNumber(index)));
+                    },
+                  ),
+                  ElevatedButton.icon(onPressed: () => _showAddPhoneDialog(context, value), icon: const Icon(Icons.add), label: const Text('Add Number')),
+                  const SizedBox(height: 20),
+                  const Text('Spouse', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: value.spouse.length,
+                    itemBuilder: (context, index) {
+                      final child = value.spouse[index];
+                      return ListTile(title: Text(child.name), subtitle: Text(DateFormat('dd/MM/yyyy').format(child.dateOfBirth)), trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => value.removeChild(index)));
+                    },
+                  ),
+                  ElevatedButton.icon(onPressed: () => _showAddSpouseDialog(context, value), icon: const Icon(Icons.add), label: const Text('Add Spouse')),
                   const SizedBox(height: 20),
                   const Text('Children', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -244,6 +245,30 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: value.priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Price', border: OutlineInputBorder()),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter price';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: value.dueAmountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Due Amount', border: OutlineInputBorder()),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter due amount';
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 30),
                   InkWell(
                     onTap: value.isLoading ? null : () => value.addCustomer(context, widget.categoryId),
@@ -262,6 +287,118 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showAddPhoneDialog(BuildContext context, CustomerProvider controller) async {
+    final phoneNumberController = TextEditingController();
+    String platform = controller.mobileType, belongsTo = controller.belongsTo;
+
+    await showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+        builder:
+            (context, setState) => AlertDialog(
+          title: const Text('Add Number'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: phoneNumberController, decoration: const InputDecoration(labelText: 'Number', border: OutlineInputBorder())),
+              const SizedBox(height: 15),
+              DropdownButtonFormField<String>(
+                value: controller.mobileType,
+                decoration: const InputDecoration(labelText: 'Platform'),
+                items:
+                controller.mobileTypeMap.entries.map((entry) {
+                  return DropdownMenuItem<String>(value: entry.key, child: Text(entry.value));
+                }).toList(),
+                onChanged: (String? selected) {
+                  if (selected != null) {
+                    debugPrint("selected value =====> $selected");
+                    platform = selected;
+                  }
+                },
+              ),
+              const SizedBox(height: 15),
+              DropdownButtonFormField<String>(
+                value: controller.belongsTo,
+                decoration: const InputDecoration(labelText: 'Belongs To'),
+                items:
+                controller.belongsToMap.entries.map((entry) {
+                  return DropdownMenuItem<String>(value: entry.key, child: Text(entry.value));
+                }).toList(),
+                onChanged: (String? selected) {
+                  if (selected != null) {
+                    debugPrint("selected value =====> $selected");
+                    belongsTo = selected;
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (phoneNumberController.text.isNotEmpty) {
+                  controller.addNumber(phoneNumberController.text, platform, belongsTo);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  void _showAddSpouseDialog(BuildContext context, CustomerProvider controller) async {
+    final nameController = TextEditingController();
+    DateTime? selectedDate;
+
+    await showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+        builder:
+            (context, setState) => AlertDialog(
+          title: const Text('Add Child'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Spouse Name', border: OutlineInputBorder())),
+              const SizedBox(height: 15),
+              ListTile(
+                title: const Text('Date of Birth'),
+                subtitle: Text(selectedDate != null ? DateFormat('dd/MM/yyyy').format(selectedDate!) : 'Not selected'),
+                leading: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime.now());
+                  if (date != null) {
+                    selectedDate = date;
+                    setState(() {}); // Update UI
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty && selectedDate != null) {
+                  controller.addSpouse(nameController.text, selectedDate!);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -315,20 +452,20 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
 
   void _showAddAncestorDialog(BuildContext context, CustomerProvider controller) async {
     final nameController = TextEditingController();
-    DateTime? selectedDate;
+    DateTime? selectedDate, selectedDateOfDeath;
+    String status = "";
 
     await showDialog(
       context: context,
-      builder:
-          (context) => StatefulBuilder(
-        builder:
-            (context, setState) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
           title: const Text('Add Ancestor'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          content: ListView(
+            shrinkWrap: true,
+            scrollDirection: Axis.vertical,
             children: [
               TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Ancestor Name', border: OutlineInputBorder())),
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               ListTile(
                 title: const Text('Date of Birth'),
                 subtitle: Text(selectedDate != null ? DateFormat('dd/MM/yyyy').format(selectedDate!) : 'Not selected'),
@@ -341,15 +478,61 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
                   }
                 },
               ),
+              ListTile(
+                title: const Text('Date of Death'),
+                subtitle: Text(selectedDateOfDeath != null ? DateFormat('dd/MM/yyyy').format(selectedDateOfDeath!) : 'Not selected'),
+                leading: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime.now());
+                  if (date != null) {
+                    selectedDateOfDeath = date;
+                    setState(() {}); // Update UI
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Status", style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              RadioListTile<String>(
+                title: const Text('Alive'),
+                value: "Alive",
+                groupValue: status,
+                onChanged: (value) {
+                  setState(() {
+                    status = value!;
+                  });
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('Dead'),
+                value: "Dead",
+                groupValue: status,
+                onChanged: (value) {
+                  setState(() {
+                    status = value!;
+                  });
+                },
+              ),
             ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty && selectedDate != null) {
-                  controller.addAncestor(nameController.text, selectedDate!);
-                  Navigator.pop(context);
+                try {
+                  if (nameController.text.isNotEmpty && selectedDate != null && status.isNotEmpty) {
+                    controller.addAncestor(
+                      nameController.text,
+                      selectedDate!,
+                      selectedDateOfDeath,
+                      status,
+                    );
+                    Navigator.pop(context);
+                  }
+                } catch (e, stack) {
+                  debugPrint('Error: $e\n$stack');
                 }
               },
               child: const Text('Add'),
@@ -359,4 +542,36 @@ class AddCustomerScreenState extends State<AddCustomerScreen> {
       ),
     );
   }
+
+
+  void _showImageSourceDialog(BuildContext context, CustomerProvider controller) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Image Source'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () async {
+                Navigator.pop(context);
+                controller.pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () async {
+                Navigator.pop(context);
+                controller.pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }

@@ -44,26 +44,6 @@ class AuthProvider with ChangeNotifier {
     await checkAuthStatus();
   }
 
-  // Future<bool> checkLocationPermission() async {
-  //   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //   if (!serviceEnabled) {
-  //     return false;
-  //   }
-  //
-  //   LocationPermission permission = await Geolocator.checkPermission();
-  //   if (permission == LocationPermission.denied) {
-  //     permission = await Geolocator.requestPermission();
-  //     if (permission == LocationPermission.denied) {
-  //       return false;
-  //     }
-  //   }
-  //
-  //   if (permission == LocationPermission.deniedForever) {
-  //     return false;
-  //   }
-  //   return true;
-  // }
-
   Future<bool> checkLocationPermission(BuildContext context) async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -128,19 +108,17 @@ class AuthProvider with ChangeNotifier {
       }
       return false;
     }
-
     return true;
   }
-
 
   Future<Map<String, String>> _getDeviceInfo() async {
     try {
       if (Platform.isIOS) {
         final iosInfo = await _deviceInfo.iosInfo;
-        return {'model': iosInfo.model ?? 'Unknown', 'brand': 'Apple', 'os_type': 'iOS', 'os_version': iosInfo.systemVersion ?? 'Unknown'};
+        return {'model': iosInfo.model, 'brand': 'Apple', 'os_type': 'iOS', 'os_version': iosInfo.systemVersion};
       } else {
         final androidInfo = await _deviceInfo.androidInfo;
-        return {'model': androidInfo.model ?? 'Unknown', 'brand': androidInfo.brand ?? 'Unknown', 'os_type': 'Android', 'os_version': androidInfo.version.release ?? 'Unknown'};
+        return {'model': androidInfo.model, 'brand': androidInfo.brand, 'os_type': 'Android', 'os_version': androidInfo.version.release};
       }
     } catch (e) {
       return {'model': 'Unknown', 'brand': 'Unknown', 'os_type': 'Unknown', 'os_version': 'Unknown'};
@@ -176,9 +154,9 @@ class AuthProvider with ChangeNotifier {
     final deviceInfo = await _getDeviceInfo();
 
     try {
-      UserModel loggedInUser = await _apiService.login(emailController.text, passwordController.text, deviceInfo, position);
+      UserModel loggedInUser = await _apiService.login(context, emailController.text, passwordController.text, deviceInfo, position);
 
-      if (loggedInUser != null && loggedInUser.data?.token != null) {
+      if (loggedInUser.data?.token != null) {
         debugPrint("loggedInUser ===========> ${loggedInUser.toJson()}");
         await _storageService!.saveUserData(loggedInUser);
         _user = loggedInUser;
@@ -257,8 +235,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-
-
   @override
   void dispose() {
     emailController.dispose();
@@ -267,12 +243,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   void clearFields() {
-    if (emailController != null) {
-      emailController.clear();
-    }
-    if (passwordController != null) {
+    emailController.clear();
       passwordController.clear();
     }
-  }
-
 }

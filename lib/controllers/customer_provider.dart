@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -17,22 +16,28 @@ class CustomerProvider with ChangeNotifier {
 
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
-  final phoneController = TextEditingController();
-  final spouseNameController = TextEditingController();
   final gotraController = TextEditingController();
   final addressController = TextEditingController();
+  final priceController = TextEditingController();
+  final dueAmountController = TextEditingController();
 
   DateTime? dateOfBirth;
   DateTime? dateOfAnniversary;
   DateTime? dateOfDeath;
   DateTime? serviceEndDate;
   final Map<String, String> serviceDurationMap = {'monthly': 'Monthly', 'quarterly': 'Quarterly', 'half_yearly': 'Half Yearly', 'yearly': 'Yearly'};
+  final Map<String, String> mobileTypeMap = {'whatsapp': 'WhatsApp', 'call': 'Call', 'telegram': 'Telegram', 'sms': 'SMS'};
+  final Map<String, String> belongsToMap = {'self': 'Self', 'spouse': 'Spouse', 'child': 'Child', 'parent': 'Parent'};
 
   String serviceDuration = "monthly";
+  String mobileType = "whatsapp";
+  String belongsTo = "self";
   int selectedCategoryId = 0;
 
-  bool isLoading = false;
+  bool isLoading = true;
 
+  List<PhoneNumber> phoneNumber = [];
+  List<Child> spouse = [];
   List<Child> children = [];
   List<Ancestor> ancestors = [];
 
@@ -44,12 +49,16 @@ class CustomerProvider with ChangeNotifier {
 
   File? selectedImageFile;
 
-
   CustomerProvider({required this.apiService});
 
-  Future<void> pickImage() async {
+  Future<void> pickImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile;
+    if(source == ImageSource.gallery) {
+      pickedFile = await picker.pickImage(source: source);
+    } else {
+      pickedFile = await picker.pickImage(source: source, maxWidth: 512, maxHeight: 512);
+    }
 
     if (pickedFile != null) {
       selectedImageFile = File(pickedFile.path);
@@ -57,10 +66,19 @@ class CustomerProvider with ChangeNotifier {
     }
   }
 
-
   void preSelectCategory(int categoryId) {
     selectedCategoryId = categoryId;
     debugPrint("selectedCategoryId ==========> $selectedCategoryId");
+    notifyListeners();
+  }
+
+  void addNumber(String number, String mobileType, String belongsTo) {
+    phoneNumber.add(PhoneNumber(number: number, mobileType: mobileType, belongsTo: belongsTo));
+    notifyListeners();
+  }
+
+  void removeNumber(int index) {
+    phoneNumber.removeAt(index);
     notifyListeners();
   }
 
@@ -74,13 +92,25 @@ class CustomerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addAncestor(String name, DateTime dob) {
-    ancestors.add(Ancestor(name: name, dateOfBirth: dob));
+  void addAncestor(String name, DateTime dob, DateTime? dod, String status) {
+    final correctedDod = status == "Alive" ? null : dod;
+    ancestors.add(Ancestor(name: name, dateOfBirth: dob, dateOfDeath: correctedDod, status: status));
+    notifyListeners();
     notifyListeners();
   }
 
   void removeAncestor(int index) {
     ancestors.removeAt(index);
+    notifyListeners();
+  }
+
+  void addSpouse(String name, DateTime dob) {
+    spouse.add(Child(name: name, dateOfBirth: dob));
+    notifyListeners();
+  }
+
+  void removeSpouse(int index) {
+    spouse.removeAt(index);
     notifyListeners();
   }
 
@@ -128,7 +158,7 @@ class CustomerProvider with ChangeNotifier {
   }
 
   bool validateForm(BuildContext context) {
-    if (firstNameController.text.isEmpty || lastNameController.text.isEmpty || phoneController.text.isEmpty || spouseNameController.text.isEmpty || gotraController.text.isEmpty || serviceDuration.isEmpty) {
+    if (firstNameController.text.isEmpty || lastNameController.text.isEmpty /*|| phoneController.text.isEmpty || spouseNameController.text.isEmpty*/ || gotraController.text.isEmpty || serviceDuration.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all the required fields')));
       return false;
     }
@@ -145,7 +175,6 @@ class CustomerProvider with ChangeNotifier {
       final customer = CustomerModel(
         firstName: firstNameController.text.trim(),
         lastName: lastNameController.text.trim(),
-        phoneNumber: phoneController.text.trim(),
         dateOfBirth: dateOfBirth!,
         dateOfAnniversary: dateOfAnniversary,
         dateOfDeath: dateOfDeath,
@@ -153,18 +182,21 @@ class CustomerProvider with ChangeNotifier {
         categoryId: categoryId,
         children: children,
         ancestors: ancestors,
-        spouseName: spouseNameController.text.trim(),
         gotra: gotraController.text.trim(),
         serviceEndDate: serviceEndDate!,
-        address: addressController.text.toString()
+        address: addressController.text.toString(),
+        spouseDetail: spouse,
+        number: phoneNumber,
+        price: int.parse(priceController.text.trim()),
+        dueAmount: int.parse(dueAmountController.text.trim()),
       );
 
       debugPrint("customer ==========> ${customer.toJson()}");
       AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
       String token = authProvider.user?.data?.token ?? '';
 
-
       AddCustomerResponse response = await apiService.addCustomer(
+        context,
         customer,
         token: token,
         imageFile: selectedImageFile,
@@ -178,6 +210,7 @@ class CustomerProvider with ChangeNotifier {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.message!)));
       }
     } catch (e) {
+      showScrollableCopyableDialog(context, e.toString());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       isLoading = false;
@@ -202,16 +235,12 @@ class CustomerProvider with ChangeNotifier {
   void disposeControllers() {
     firstNameController.dispose();
     lastNameController.dispose();
-    phoneController.dispose();
-    spouseNameController.dispose();
     gotraController.dispose();
   }
 
   void clearFields() {
     firstNameController.clear();
     lastNameController.clear();
-    phoneController.clear();
-    spouseNameController.clear();
     gotraController.clear();
     addressController.clear();
     selectedImageFile = null;
@@ -228,10 +257,39 @@ class CustomerProvider with ChangeNotifier {
 
     children = [];
     ancestors = [];
+    spouse = [];
+    phoneNumber = [];
 
     customers = [];
     selectedCustomer = null;
     customerList = [];
     notifyListeners();
+  }
+
+  void showScrollableCopyableDialog(BuildContext context, String? message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: const EdgeInsets.all(16),
+        content: SizedBox(
+          width: double.infinity,
+          height: 400,
+          child: Scrollbar(
+            child: SingleChildScrollView(
+              child: SelectableText(
+                message ?? "",
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 }

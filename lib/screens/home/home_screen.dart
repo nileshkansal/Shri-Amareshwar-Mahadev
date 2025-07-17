@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:shri_amareshwar_mahadev/controllers/auth_provider.dart';
 import 'package:shri_amareshwar_mahadev/screens/customer/add_customer_screen.dart';
@@ -60,7 +59,11 @@ class HomeScreen extends StatelessWidget {
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15, childAspectRatio: 1.1),
+                    // gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15, childAspectRatio: 1.1),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2,
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
+                      mainAxisExtent: 190,),
                     itemCount: categories.length,
                     itemBuilder: (context, index) {
                       final category = categories[index];
@@ -76,7 +79,7 @@ class HomeScreen extends StatelessWidget {
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
-                            padding: const EdgeInsets.all(15.0),
+                            padding: const EdgeInsets.all(12.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -94,7 +97,7 @@ class HomeScreen extends StatelessWidget {
                                   )
                                 else
                                   Icon(Icons.category, size: 40, color: Theme.of(context).primaryColor),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
                                 Text(category.name ?? "", textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                               ],
                             ),
@@ -106,11 +109,6 @@ class HomeScreen extends StatelessWidget {
                 }
               ),
               const SizedBox(height: 30),
-              // ElevatedButton.icon(
-              //   onPressed: () => Get.toNamed(Routes.customerList),
-              //   icon: const Icon(Icons.people_outline),
-              //   label: const Text('View Customer List'),
-              // ),
             ],
           ),
         ),

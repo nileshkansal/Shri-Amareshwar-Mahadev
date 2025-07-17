@@ -5,9 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shri_amareshwar_mahadev/main.dart';
 import 'package:shri_amareshwar_mahadev/models/customer_list_response.dart';
 import 'package:shri_amareshwar_mahadev/models/customer_response.dart';
@@ -17,10 +15,9 @@ import '../models/user_model.dart';
 
 class ApiService {
   late final Dio _dio;
-  static const String serverUrl = "https://shri-amareshwar-mahadev.brilliancetechsolutions.com/";
-  static String imageUrl = "https://shri-amareshwar-mahadev.brilliancetechsolutions.com/public/";
+  static const String serverUrl = "https://shriamareshwarmahadev.org/";
+  static String imageUrl = "https://shriamareshwarmahadev.org/public/";
   final String baseUrl = "${serverUrl}api"; // Replace with your actual base URL
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   ApiService() {
     _dio = Dio(
@@ -33,7 +30,7 @@ class ApiService {
     );
   }
 
-  Future<UserModel> login(String email, String password, Map<String, String> deviceInfo, Position position) async {
+  Future<UserModel> login(BuildContext context, String email, String password, Map<String, String> deviceInfo, Position position) async {
     try {
       debugPrint('URL ==========> $baseUrl/login');
 
@@ -58,6 +55,7 @@ class ApiService {
         debugPrint('Response data ======> ${jsonEncode(response.data)}');
         return UserModel.fromJson(response.data);
       } else {
+        showScrollableCopyableDialog(context, response.data);
         debugPrint('Login failed with response: ${response.data}');
         throw response.data['message'] ?? 'Login failed';
       }
@@ -68,6 +66,7 @@ class ApiService {
         debugPrint('Dio Error Message: ${e.message}');
         debugPrint('Dio Error Response: ${e.response?.data}');
         final response = e.response?.data;
+        showScrollableCopyableDialog(context, response);
         throw response?['message'] ?? 'Login failed';
       }
       throw 'Login failed: $e';
@@ -116,56 +115,82 @@ class ApiService {
     debugPrint('Response Body: ${response.body}');
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      debugPrint('data =======> $data');
-      CustomerListResponse customerListResponse = CustomerListResponse.fromJson(data);
-      return customerListResponse.data;
+      try {
+        final data = jsonDecode(response.body);
+        debugPrint('data =======> $data');
+        CustomerListResponse customerListResponse = CustomerListResponse.fromJson(data);
+        debugPrint("customer list length =======> ${customerListResponse.data?.length}");
+        return customerListResponse.data;
+      } catch (e) {
+        debugPrint("catch error =======> ${e.toString()}");
+        return null;
+      }
     } else {
+      debugPrint("customer list length =======> ${response.reasonPhrase}");
       throw Exception('Failed to get customers');
     }
   }
 
-  Future<AddCustomerResponse> addCustomer(CustomerModel customer, {String? token, File? imageFile}) async {
-    final url = '$baseUrl/add/registration';
-    Map<String, String> headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-    final body = jsonEncode(customer.toJson());
-    debugPrint('Add Customer API Call:');
-    debugPrint('URL: $url');
-    debugPrint('Headers: $headers');
-    debugPrint('Request Body: $body');
+  Future<AddCustomerResponse> addCustomer(BuildContext context, CustomerModel customer, {String? token, File? imageFile}) async {
+    try {
+      final url = '$baseUrl/add/registration';
+      final body = jsonEncode(customer.toJson());
+      debugPrint('Add Customer API Call:');
+      debugPrint('URL: $url');
+      debugPrint('Request Body: $body');
 
-    final request = http.MultipartRequest('POST', Uri.parse(url))
-      ..headers.addAll({
-        'Authorization': 'Bearer $token',
+      final request = http.MultipartRequest('POST', Uri.parse(url))
+        ..headers.addAll({
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer $token',
+        });
+
+      final customerJson = customer.toJson();
+      customerJson.forEach((key, value) {
+        if (value != null) {
+          request.fields[key] = value.toString();
+        }
       });
-    // Add fields from customer.toJson()
-    final customerJson = customer.toJson();
-    customerJson.forEach((key, value) {
-      if (value != null) {
-        request.fields[key] = value.toString();
+
+      if (imageFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+        ));
       }
-    });
-    // Add image file
-    if (imageFile != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-        'image', // this should match your API key for image
-        imageFile.path,
-      ));
-    }
-    // Send request
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
 
-    debugPrint('Response Body: ${response.body}');
+      debugPrint("request files ==========> ${request.files.length}");
+      debugPrint("request headers ==========> ${request.headers.toString()}");
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-    final data = jsonDecode(response.body);
-    if (data["status"] == true) {
-      return AddCustomerResponse.fromJson(data);
-    } else {
-      throw Exception(data["message"] ?? 'Failed to add customer');
+      debugPrint('Response status code: ${response.statusCode}');
+      debugPrint('Response reason Phrase: ${response.reasonPhrase}');
+      debugPrint('Response Body: ${response.body}');
+      debugPrint('Response headers: ${response.headers}');
+      debugPrint('Response request: ${response.request.toString()}');
+
+      final data = jsonDecode(response.body);
+      debugPrint(data["message"]);
+
+      if (data["status"] == true) {
+        return AddCustomerResponse.fromJson(data);
+      } else {
+        showScrollableCopyableDialog(context, response.reasonPhrase);
+        throw Exception(data["message"] ?? 'Failed to add customer');
+      }
+    } catch(e) {
+      debugPrint('Login API Error: $e');
+      if (e is DioException) {
+        debugPrint('Dio Error Type: ${e.type}');
+        debugPrint('Dio Error Message: ${e.message}');
+        debugPrint('Dio Error Response: ${e.response?.data}');
+        final response = e.response?.data;
+        showScrollableCopyableDialog(context, response);
+        throw response?['message'] ?? 'Login failed';
+      }
+      throw 'Customer add failed: $e';
     }
   }
 
@@ -278,4 +303,30 @@ class ApiService {
     debugPrint('Response Body: ${response.body}');
   }
 
+  void showScrollableCopyableDialog(BuildContext context, String? message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: const EdgeInsets.all(16),
+        content: SizedBox(
+          width: double.infinity,
+          height: 400,
+          child: Scrollbar(
+            child: SingleChildScrollView(
+              child: SelectableText(
+                message ?? "",
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
 }
